@@ -1,0 +1,261 @@
+{
+  "name": "API Rest",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT credit_score, esg_score, transactions_enriched, last_updated \nFROM customer_scores \nWHERE customer_id = '{{ $('GET user').first().json.query.customerId }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f5e4b631-4e2f-4dd4-98fc-59057b24e36e",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "u402mREEqWjUFXIv",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"data\": {{ JSON.stringify($('Execute a SQL query').first().json) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        0
+      ],
+      "id": "d87ded77-2ac4-4000-a129-4d2e1f1a070f",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "content": "🚀 Microsserviço 3: API REST (BFF - Backend for Frontend)\nPadrão: Synchronous API / High Availability Data Retrieval\n\nInterface unificada de entrega de dados para o Dashboard.\n\nGET /v1/score: Retorna Score de Crédito, ESG e transações enriquecidas.\n\nGET /v1/users: Alimenta o Diretório/Sidebar com a listagem de clientes.\n\nGET /v1/random-user: Utilitário de UX para sorteio de perfis reais no banco.\n\nArquitetura: Blindagem via Nginx (Proxy Reverso) ocultando as portas internas e gerenciando o roteamento /api/.",
+        "height": 256,
+        "width": 800,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -272
+      ],
+      "id": "72f761e6-4e28-4cba-aeae-94163deabf05",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT customer_id FROM customer_scores ORDER BY RANDOM() LIMIT 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        160
+      ],
+      "id": "74feb700-e39e-42ff-a2e2-ca5f3cdeb9aa",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "u402mREEqWjUFXIv",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"success\", \"customerId\": \"{{ $json.customer_id }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        160
+      ],
+      "id": "9414b728-d2ca-4bd2-9244-ac9df7d14225",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "path": "v1/score",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dd470f7e-b8eb-4467-a7ed-b20394387be1",
+      "name": "GET user",
+      "webhookId": "95e29900-4056-4af3-bd05-0f345911f368"
+    },
+    {
+      "parameters": {
+        "path": "v1/random-user",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        160
+      ],
+      "id": "0233ad13-6373-4003-bdfb-380adb59b0a7",
+      "name": "GET randUser",
+      "webhookId": "930f1b59-5353-4d7e-a7b4-dd5cae3899dc"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT customer_id, credit_score, esg_score FROM customer_scores ORDER BY credit_score DESC;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        320
+      ],
+      "id": "579bcc32-2d33-4582-9000-2a28da846d1e",
+      "name": "Execute a SQL query2",
+      "credentials": {
+        "postgres": {
+          "id": "u402mREEqWjUFXIv",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{\n {\n  \"status\": \"success\",\n  \"data\": $(\"Execute a SQL query2\").all().map(item => item.json)\n }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        320
+      ],
+      "id": "492bff5a-bdee-4999-bdeb-566c7334c2b1",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "path": "v1/users",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        320
+      ],
+      "id": "0afed5eb-ff95-495d-9518-d9c83abd7138",
+      "name": "GET allUsers",
+      "webhookId": "dd7fff6a-66c8-47db-98cd-844b2e26b963"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET user": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET randUser": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET allUsers": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "dd4ee0b0-b143-4772-8474-d72f82fa3af8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa9040fc2c642d73e55a277013d62cca5201f333daff267bff723c2aba993171"
+  },
+  "id": "TK05aIhuah1RnjyG",
+  "tags": []
+}

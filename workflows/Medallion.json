@@ -1,0 +1,356 @@
+{
+  "name": "Medallion",
+  "nodes": [
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "gen-lang-client-0829338696",
+          "mode": "id"
+        },
+        "modelName": "gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        208
+      ],
+      "id": "f2c84554-db96-45c2-b146-ba3bc883dae7",
+      "name": "Google Vertex Chat Model",
+      "credentials": {
+        "googleApi": {
+          "id": "l0hVMKcyyKV9q6aH",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n{\njson: {\ndata: [\n{ \"id\": \"S1-01\", \"amount\": 120.00, \"date\": \"2026-03-01\", \"description\": \"SUPERMERCADO\", \"institution_name\": \"BANCO A\" },\n{ \"transactionIdentifier\": \"S1-02\", \"value\": \"80.00\", \"bookingDate\": \"2026-03-02T10:00:00Z\", \"narrative\": \"POSTO GASOLINA\", \"institution_name\": \"BANCO B\" },\n{ \"txid\": \"S1-03\", \"amount\": 60.00, \"date\": \"2026-03-03\", \"description\": \"PADARIA\", \"institution_name\": \"BANCO A\" },\n{ \"transactionId\": \"S1-04\", \"value\": \"90.00\", \"bookingDate\": \"2026-03-04T12:00:00Z\", \"narrative\": \"FARMACIA\", \"institution_name\": \"BANCO B\" },\n{ \"id\": \"S1-05\", \"amount\": 150.00, \"date\": \"2026-03-05\", \"description\": \"ALUGUEL\", \"institution_name\": \"BANCO A\" }\n]\n}\n}\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        160
+      ],
+      "id": "38d3cdaf-da27-4cb8-9f8e-f4b269e1abb5",
+      "name": "S200 - Camada Bronze (Raw Data)2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalização de Payloads Multi-Banco (Silver Layer)\nconst items = $input.all();\n\n// Extraímos o array de transações do payload bruto\nconst rawTransactions = items[0].json.data;\n\nconst normalizedData = rawTransactions.map(raw => {\n    return {\n        transaction_id: raw.id || raw.txid || raw.transactionIdentifier || raw.transactionId, // Normaliza IDs\n        amount: parseFloat(raw.amount || raw.value).toFixed(2), // Garante o float com 2 casas\n        currency: raw.currency || 'BRL',\n        timestamp: new Date(raw.bookingDate || raw.date).toISOString(), // Padroniza para ISO 8601\n        source_bank: raw.institution_name,\n        category_raw: raw.description || raw.narrative // Unifica a descrição bruta\n    };\n});\n\n// O N8N exige que o retorno seja um array de objetos encapsulados na chave 'json'\nreturn normalizedData.map(item => ({ json: item }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        0
+      ],
+      "id": "8533d03a-795e-415e-ac78-bf988650bde6",
+      "name": "Camada Silver (Clean Data)"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "transaction_id"
+            },
+            {
+              "fieldToAggregate": "amount"
+            },
+            {
+              "fieldToAggregate": "category_raw"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        0
+      ],
+      "id": "76781604-bb9a-47b9-851e-a80f93bbbbac",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n  \"system_prompt\": {\n    \"role\": \"Senior Financial Analyst\",\n    \"expertise\": \"Open Finance Brazil\",\n    \"task\": \"Process an array of raw transactions and return a categorized JSON object.\",\n    \"business_rules\": {\n      \"categorization\": \"Identify and classify each expense strictly as 'Essential', 'Leisure', or 'Investment'.\",\n      \"esg_scoring\": \"Calculate an 'ESG Impact' score ranging from 0 to 10, based on the merchant's category.\"\n    },\n    \"output_constraints\": {\n      \"format\": \"JSON\",\n      \"schema\": {\n        \"type\": \"array\",\n        \"items\": {\n          \"id\": \"string\",\n          \"category\": \"string\",\n          \"esg_score\": \"number\"\n        }\n      }\n    },\n    \"input\": \"Analyze the following real transactions and return ONLY the required JSON. Transactions: {{ JSON.stringify($json) }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1584,
+        0
+      ],
+      "id": "4d3770a1-3fac-4c8f-910e-f82601d9f4b0",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n{\njson: {\ndata: [\n{ \"id\": \"S2-01\", \"amount\": 2000.00, \"date\": \"2026-03-01\", \"description\": \"SALARIO\", \"institution_name\": \"BANCO A\" },\n{ \"transactionIdentifier\": \"S2-02\", \"value\": \"400.00\", \"bookingDate\": \"2026-03-02T10:00:00Z\", \"narrative\": \"TESOURO DIRETO\", \"institution_name\": \"XP\" },\n{ \"txid\": \"S2-03\", \"amount\": 300.00, \"date\": \"2026-03-03\", \"description\": \"CDB BANCO\", \"institution_name\": \"INTER\" },\n{ \"transactionId\": \"S2-04\", \"value\": \"200.00\", \"bookingDate\": \"2026-03-04T12:00:00Z\", \"narrative\": \"FII LOGISTICA\", \"institution_name\": \"XP\" },\n{ \"id\": \"S2-05\", \"amount\": 100.00, \"date\": \"2026-03-05\", \"description\": \"SUPERMERCADO\", \"institution_name\": \"BANCO A\" }\n]\n}\n}\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        0
+      ],
+      "id": "43ac9187-8d83-4da8-9a41-e151debe28b5",
+      "name": "S600 - Camada Bronze (Raw Data)"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n{\njson: {\ndata: [\n{ \"id\": \"S3-01\", \"amount\": 3500.00, \"date\": \"2026-03-01\", \"description\": \"SALARIO GLOBAL\", \"institution_name\": \"BANCO A\" },\n{ \"transactionIdentifier\": \"S3-02\", \"value\": \"500.00\", \"bookingDate\": \"2026-03-02T10:00:00Z\", \"narrative\": \"TESOURO SELIC\", \"institution_name\": \"XP\" },\n{ \"txid\": \"S3-03\", \"amount\": 400.00, \"date\": \"2026-03-03\", \"description\": \"CDB POS FIXADO\", \"institution_name\": \"INTER\" },\n{ \"transactionId\": \"S3-04\", \"value\": \"350.00\", \"bookingDate\": \"2026-03-04T12:00:00Z\", \"narrative\": \"FII ESG\", \"institution_name\": \"XP\" },\n{ \"id\": \"S3-05\", \"amount\": 300.00, \"date\": \"2026-03-05\", \"description\": \"ACOES ENERGIA LIMPA\", \"institution_name\": \"RICO\" },\n{ \"transactionIdentifier\": \"S3-06\", \"value\": \"200.00\", \"bookingDate\": \"2026-03-06T18:00:00Z\", \"narrative\": \"PREVIDENCIA PRIVADA\", \"institution_name\": \"BANCO A\" }\n]\n}\n}\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        -160
+      ],
+      "id": "9db8a88e-6549-49fb-909b-93323a6c971b",
+      "name": "S900 - Camada Bronze (Raw Data)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Busca os dados limpos diretamente do nó da Camada Silver\nconst silverData = $('Camada Silver (Clean Data)').all();\nconst transactions = silverData.map(item => item.json);\n\n// 2. Captura a resposta do nó Vertex AI (Agente)\n// Em nós de IA do N8N, a resposta costuma vir em 'output', 'text' ou 'response'\nconst aiRawOutput = $input.first().json.output || $input.first().json.text || $input.first().json.response || \"\";\n\n// 3. Parser Robusto (Prevenção de Erros de LLM)\n// Remove formatações Markdown indesejadas que o LLM possa ter incluído\nconst cleanJsonString = aiRawOutput.replace(/```json/gi, '').replace(/```/g, '').trim();\n\nlet ai_insights = [];\ntry {\n    // Tenta converter a string gerada pela IA em um array de objetos reais\n    ai_insights = JSON.parse(cleanJsonString);\n} catch (error) {\n    throw new Error(\"Falha Crítica: O Vertex AI não retornou um JSON válido. Retorno da IA: \" + aiRawOutput);\n}\n\n// 4. Variáveis da Fórmula\nlet fluxoCaixa = 0;\nlet qtdInvestimentos = 0; \nlet esgTotal = 0;\n\n// 5. Merge entre o dado da API (Silver) e o Insight da IA (Gold)\nconst enrichedData = transactions.map(tx => {\n    const insight = ai_insights.find(i => i.id === tx.transaction_id);\n    const category = insight ? insight.category : \"Indefinido\";\n    const esg = insight ? insight.esg_score : 5;\n    \n    fluxoCaixa += parseFloat(tx.amount);\n    esgTotal += esg;\n    \n    if (category === \"Investment\") {\n        qtdInvestimentos += 1; // Contabiliza a frequência de aportes\n    }\n\n    return {\n        ...tx,\n        category_enriched: category,\n        esg_score: esg\n    };\n});\n\n// 6. NORMALIZAÇÃO DAS GRANDEZAS (Teto 1000 para cada pilar)\n// Assume que R$ 5.000,00 de fluxo mensal é o teto para nota máxima neste pilar\nconst scoreFluxo = Math.min((fluxoCaixa / 5000) * 1000, 1000); \n\n// Assume que 5 aportes de investimento garantem nota máxima neste pilar (200 pts por aporte)\nconst scoreInvestimento = Math.min(qtdInvestimentos * 200, 1000); \n\n// Fidelidade convertida para a escala de 1000 (ex: 850 = 85% de histórico positivo)\nconst scoreFidelidade = 850; \n\n// 7. Pesos e Cálculo da Fórmula\nconst W1 = 0.4;\nconst W2 = 0.3;\nconst W3 = 0.3;\n\nlet scoreFinal = (W1 * scoreFluxo) + (W2 * scoreInvestimento) + (W3 * scoreFidelidade);\n\n// 8. ESG Link (Bônus Verde)\nconst mediaEsg = transactions.length > 0 ? (esgTotal / transactions.length) : 5;\nif (mediaEsg >= 7) {\n    scoreFinal *= 1.1; // Bônus Verde de 10%\n}\n\n// Garante que o score final jamais ultrapasse o limite regulatório de 1000\nconst scoreDefinitivo = Math.min(Math.round(scoreFinal), 1000);\n\nreturn [\n  {\n    json: {\n      customer_id: \"USER-12345\",\n      alternative_credit_score: scoreDefinitivo,\n      average_esg_score: parseFloat(mediaEsg.toFixed(1)),\n      transactions_enriched: enrichedData\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1904,
+        0
+      ],
+      "id": "88cc9c69-7e90-4f9f-a777-1ef9b6ed9eed",
+      "name": "Fusão de Dados e Cálculo do Score Alternativo (Camada Gold)"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n{\njson: {\ndata: [\n{ \"id\": \"F0-01\", \"amount\": 3000.00, \"date\": \"2026-03-01\", \"description\": \"SALARIO EMPRESA TECH\", \"institution_name\": \"BANCO A\" },\n{ \"transactionIdentifier\": \"F0-02\", \"value\": \"1200.00\", \"bookingDate\": \"2026-03-02T10:00:00Z\", \"narrative\": \"BONUS PERFORMANCE\", \"institution_name\": \"BANCO A\" },\n{ \"txid\": \"F0-03\", \"amount\": 600.00, \"date\": \"2026-03-03\", \"description\": \"ALUGUEL APARTAMENTO\", \"institution_name\": \"BANCO A\" },\n{ \"transactionId\": \"F0-04\", \"value\": \"450.00\", \"bookingDate\": \"2026-03-04T12:00:00Z\", \"narrative\": \"SUPERMERCADO PREMIUM\", \"institution_name\": \"BANCO A\" },\n{ \"id\": \"F0-05\", \"amount\": 350.00, \"date\": \"2026-03-05\", \"description\": \"RESTAURANTES VARIOS\", \"institution_name\": \"BANCO A\" },\n{ \"transactionIdentifier\": \"F0-06\", \"value\": \"250.00\", \"bookingDate\": \"2026-03-06T18:00:00Z\", \"narrative\": \"VIAGEM AEREA\", \"institution_name\": \"BANCO A\" }\n]\n}\n}\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        320
+      ],
+      "id": "ad82c882-8fa4-46ac-949d-241bd94fd297",
+      "name": "Max Invest - Camada Bronze (Raw Data)1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO customer_scores (customer_id, credit_score, esg_score, transactions_enriched)\nVALUES (\n    '{{ $json.customer_id }}', \n    {{ $json.alternative_credit_score }}, \n    {{ $json.average_esg_score }}, \n    '{{ JSON.stringify($json.transactions_enriched) }}'::jsonb\n)\nON CONFLICT (customer_id) \nDO UPDATE SET \n    credit_score = EXCLUDED.credit_score,\n    esg_score = EXCLUDED.esg_score,\n    transactions_enriched = EXCLUDED.transactions_enriched,\n    last_updated = CURRENT_TIMESTAMP;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2112,
+        0
+      ],
+      "id": "ba4b237e-cd82-4f80-b5b3-6e3ae26c4f00",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "u402mREEqWjUFXIv",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO customer_scores (customer_id, credit_score, esg_score, transactions_enriched)\nVALUES (\n    '{{ $json.customer_id }}', \n    {{ $json.alternative_credit_score }}, \n    {{ $json.average_esg_score }}, \n    '{{ JSON.stringify($json.transactions_enriched) }}'::jsonb\n)\nON CONFLICT (customer_id) \nDO UPDATE SET \n    credit_score = EXCLUDED.credit_score,\n    esg_score = EXCLUDED.esg_score,\n    transactions_enriched = EXCLUDED.transactions_enriched,\n    last_updated = CURRENT_TIMESTAMP;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2768,
+        688
+      ],
+      "id": "7a056cfb-d693-49bc-9bdd-80f545efb26c",
+      "name": "Seeding QUERY",
+      "credentials": {
+        "postgres": {
+          "id": "u402mREEqWjUFXIv",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const categories = [\"Investment\", \"Essential\", \"Leisure\", \"Other\"];\n\nfunction generateTransactions(userIndex) {\n  const txCount = Math.floor(Math.random() * 5) + 8; // 8 a 12 transações\n  const transactions = [];\n\n  for (let i = 0; i < txCount; i++) {\n    const category =\n      categories[Math.floor(Math.random() * categories.length)];\n\nlet esg = 5.0;\n    if (category === \"Investment\") esg = (Math.random() * (10 - 8) + 8).toFixed(1); // 8 a 10\n    else if (category === \"Essential\") esg = (Math.random() * (7 - 5) + 5).toFixed(1); // 5 a 7\n    else if (category === \"Leisure\") esg = (Math.random() * (5 - 2) + 2).toFixed(1); // 2 a 5\n    else esg = (Math.random() * (6 - 4) + 4).toFixed(1); // 4 a 6\n\n    transactions.push({\n      id: `tx_${userIndex}_${i + 1}`,\n      category_enriched: category,\n      esg_score: parseFloat(esg) // <--- O CAMPO QUE ESTAVA FALTANDO!\n    });\n  }\n\n  return transactions;\n}\n\nconst baseUsers = [\n  { id: \"USER-901\", score: 985, esg: 9.1 },\n  { id: \"USER-902\", score: 940, esg: 8.2 },\n  { id: \"USER-903\", score: 910, esg: 7.8 },\n  { id: \"USER-750A\", score: 880, esg: 7.5 },\n  { id: \"USER-760B\", score: 845, esg: 6.8 },\n  { id: \"USER-770C\", score: 810, esg: 6.2 },\n  { id: \"USER-780D\", score: 775, esg: 7.2 },\n  { id: \"USER-790E\", score: 760, esg: 5.9 },\n  { id: \"USER-600A\", score: 690, esg: 5.5 },\n  { id: \"USER-610B\", score: 670, esg: 4.8 },\n  { id: \"USER-620C\", score: 655, esg: 6.1 },\n  { id: \"USER-630D\", score: 640, esg: 5.2 },\n  { id: \"USER-640E\", score: 615, esg: 5.0 },\n  { id: \"USER-400A\", score: 590, esg: 6.4 },\n  { id: \"USER-410B\", score: 560, esg: 4.3 },\n  { id: \"USER-420C\", score: 530, esg: 5.7 },\n  { id: \"USER-430D\", score: 505, esg: 3.9 },\n  { id: \"USER-440E\", score: 480, esg: 6.0 },\n  { id: \"USER-200A\", score: 390, esg: 4.1 },\n  { id: \"USER-210B\", score: 360, esg: 3.5 },\n  { id: \"USER-220C\", score: 330, esg: 2.9 },\n  { id: \"USER-230D\", score: 295, esg: 3.2 },\n  { id: \"USER-240E\", score: 250, esg: 2.8 },\n  { id: \"USER-MIX1\", score: 720, esg: 8.0 },\n  { id: \"USER-MIX2\", score: 810, esg: 9.0 },\n  { id: \"USER-MIX3\", score: 670, esg: 6.9 },\n  { id: \"USER-MIX4\", score: 590, esg: 7.2 },\n  { id: \"USER-MIX5\", score: 880, esg: 8.7 },\n  { id: \"USER-EDGE1\", score: 1000, esg: 9.9 },\n  { id: \"USER-EDGE2\", score: 0, esg: 1.0 },\n  { id: \"USER-EDGE3\", score: 850, esg: 6.99 },\n  { id: \"USER-EDGE4\", score: 860, esg: 7.0 }\n];\n\nconst seedData = baseUsers.map((user, index) => ({\n  customer_id: user.id,\n  alternative_credit_score: user.score,\n  average_esg_score: user.esg,\n  transactions_enriched: generateTransactions(index)\n}));\n\nreturn seedData.map(item => ({ json: item }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2432,
+        688
+      ],
+      "id": "3ffb14ce-2571-4bea-9c95-a58b6bf730fb",
+      "name": "Seeding DATASET"
+    },
+    {
+      "parameters": {
+        "content": "⚙️ Microsserviço 2: Pipeline Medallion & IA (RF02 a RF04)\nPadrão: ETL / Batch Processing / RAG\n\nEste é o motor assíncrono (Background Worker) do Hub. Não bloqueia a tela do usuário.\n• Camada Bronze: Ingestão de dados brutos e despadronizados de múltiplos bancos.\n• Camada Silver: Limpeza, normalização de datas (ISO 8601) e tipagem (Float).\n• Agente IA (Vertex): Uso de RAG e Chain-of-Thought para categorização semântica rigorosa e cálculo de impacto ESG.\n• Camada Gold: Fusão de dados (Merge) e cálculo matemático do Score Alternativo de Crédito (0 a 1000).\n• Persistência: Upsert do JSONB enriquecido no banco de dados PostgreSQL.",
+        "height": 192,
+        "width": 848,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        -256
+      ],
+      "id": "b6e353e8-b3eb-4708-b736-bb3232b70697",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        0
+      ],
+      "id": "ca692fd9-aa3d-4ee5-97ec-2d176f425273",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Camada Silver (Clean Data)": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Fusão de Dados e Cálculo do Score Alternativo (Camada Gold)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "S600 - Camada Bronze (Raw Data)": {
+      "main": [
+        [
+          {
+            "node": "Camada Silver (Clean Data)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "S200 - Camada Bronze (Raw Data)2": {
+      "main": [
+        []
+      ]
+    },
+    "S900 - Camada Bronze (Raw Data)": {
+      "main": [
+        []
+      ]
+    },
+    "Max Invest - Camada Bronze (Raw Data)1": {
+      "main": [
+        []
+      ]
+    },
+    "Fusão de Dados e Cálculo do Score Alternativo (Camada Gold)": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seeding DATASET": {
+      "main": [
+        [
+          {
+            "node": "Seeding QUERY",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "S600 - Camada Bronze (Raw Data)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "binaryMode": "separate"
+  },
+  "versionId": "6076ccc2-b069-4da5-9902-7b9733666a3e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa9040fc2c642d73e55a277013d62cca5201f333daff267bff723c2aba993171"
+  },
+  "id": "SGMCcgT3a5Ggi8JP",
+  "tags": []
+}

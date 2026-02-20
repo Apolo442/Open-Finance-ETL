@@ -1,0 +1,145 @@
+{
+  "name": "Consent",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "🔐 Microsserviço 1: Fluxo de Consentimento (RF01)\nPadrão: Event-Driven / FAPI Simulation\n\nEste workflow atua como a porta de entrada do Open Finance.\n1. Recebe a intenção de compartilhamento de dados do cliente.\n2. Gera um payload simulando o padrão FAPI (Financial-grade API).\n3. Armazena o estado \"AWAITING_AUTHORISATION\" no Redis com um TTL de 5 minutos (Memória de curto prazo para segurança).\n4. Dispara de forma assíncrona o Motor de Processamento (Medallion).",
+        "height": 208,
+        "width": 1046,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -288
+      ],
+      "id": "2cea2259-6ad2-4b23-9aaa-34e41da96f07",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simulação do payload de criação de Intent de Consentimento\nreturn [\n  {\n    json: {\n      \"data\": {\n        \"consentId\": \"urn:banco:consent:9999-8888-7777\",\n        \"creationDateTime\": new Date().toISOString(),\n        \"status\": \"AWAITING_AUTHORISATION\",\n        \"expirationDateTime\": \"2026-12-31T23:59:59Z\"\n      },\n      \"meta\": {\n        \"totalRecords\": 1,\n        \"totalPages\": 1\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -16
+      ],
+      "id": "05ef3ef5-aae1-4c45-8974-a557dd897d8c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "consent_sess:{{ $json.data.consentId }}",
+        "value": "={{ $json.data.status }}",
+        "expire": true,
+        "ttl": 300
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        304,
+        -16
+      ],
+      "id": "c16a6de9-98dc-455e-8471-55965c4786de",
+      "name": "Redis",
+      "credentials": {
+        "redis": {
+          "id": "ACqovOOOaavZq9TM",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        -16
+      ],
+      "id": "147b8937-62e2-4c50-bd07-d5b5bddcd8f5",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "SGMCcgT3a5Ggi8JP",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/SGMCcgT3a5Ggi8JP",
+          "cachedResultName": "Medallion"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        512,
+        -16
+      ],
+      "id": "960e01d6-7499-42c3-bd85-61c83096c446",
+      "name": "Call 'Medallion'"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis": {
+      "main": [
+        [
+          {
+            "node": "Call 'Medallion'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "fa31fc0e-195d-42a4-a220-772a1dff2c15",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa9040fc2c642d73e55a277013d62cca5201f333daff267bff723c2aba993171"
+  },
+  "id": "blpz6FnKsJ6t8bdQ",
+  "tags": []
+}

@@ -1,0 +1,54 @@
+# ==========================================
+# HUB DE SAÚDE FINANCEIRA - GITIGNORE (2026)
+# ==========================================
+
+# 1. Segredos e Variáveis de Ambiente (CRÍTICO)
+.env
+.env.*
+*.env
+!*.env.example 
+# Permite commitar um arquivo de exemplo seguro
+
+# 2. Material Criptográfico (mTLS / FAPI / SSL)
+# Ignora todos os certificados e chaves, mas mantém a pasta
+nginx/certs/*
+!nginx/certs/.gitkeep
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
+
+# 3. Dados Locais e Volumes Docker (Evitar vazamento de dados do cliente/LGPD)
+# Caso venhamos a mapear volumes para pastas locais no futuro
+db_data/
+n8n_data/
+redis_data/
+.n8n/
+pgdata/
+data/
+
+# 4. Logs e Diagnósticos
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 5. Dependências de Código (Node.js e Python para Workers/ETL)
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# 6. Infraestrutura como Código (IaC - Ansible)
+*.retry
+.ansible/
+vault_password.txt
+
+# 7. Arquivos de Sistema Operacional
+.DS_Store
+Thumbs.db

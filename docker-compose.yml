@@ -1,0 +1,85 @@
+services:
+  # Orquestrador Visual e Motor de ETL
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: hub_n8n
+    restart: always
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=database
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=none
+      - REDIS_HOST=redis_cache
+    ports:
+      - "127.0.0.1:5678:5678" # Exposto apenas localmente; o Nginx fará o proxy
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - database
+      - redis_cache
+    networks:
+      - hub_network
+
+  # Camada de Memória de Curto Prazo e Cache (< 500ms)
+  redis_cache:
+    image: redis:alpine
+    container_name: hub_redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - hub_network
+
+  # Persistência de Dados (Camadas Silver/Gold)
+  database:
+    image: postgres:15-alpine
+    container_name: hub_postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - hub_network
+
+  # Proxy Reverso e Terminação mTLS (Pilar de Segurança FAPI)
+  nginx:
+    image: nginx:alpine
+    container_name: hub_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/nginx/certs:ro # Certificados ICP-Brasil montados como Read-Only
+      - ./frontend:/usr/share/nginx/html:ro # Frontend estático do Hub (Dashboard, etc.)
+    depends_on:
+      - n8n
+    networks:
+      - hub_network
+
+volumes:
+  n8n_data:
+  db_data:
+  redis_data:
+
+networks:
+  hub_network:
+    driver: bridge
+
+# ---Justificativa Arquitetural (A Régua de 2026)---
+#
+# -> Isolamento de Rede (hub_network): Apenas o Nginx expõe portas para o mundo exterior (80/443).
+#    o N8N e o Banco de Dados se comunicam internamente, reduzindo a superfície de ataque.
+#
+# -> Persistência Resiliente: Utilizamos volumes nomeados do Docker para garantir que o N8N não perca os fluxos,
+#    o PostgreSQL não perca as transações financeiras e o Redis mantenha o cache após qualquer reinicialização.
+#
+# -> Gestão de Segredos: Variáveis sensíveis do banco (${POSTGRES_USER}, etc.) devem ser injetadas via um arquivo .env separado, nunca hardcoded no YAML.

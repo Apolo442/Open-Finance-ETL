@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hub Open Finance | AI Credit Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+    <nav class="bg-indigo-600 text-white p-4 shadow-md">
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold flex items-center gap-2">
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            ></path>
+          </svg>
+          Hub Open Finance
+        </h1>
+        <span class="text-sm bg-indigo-500 px-3 py-1 rounded-full text-xs"
+          >Medallion AI Pipeline</span
+        >
+      </div>
+    </nav>
+
+    <main
+      class="max-w-7xl mx-auto p-4 mt-6 grid grid-cols-1 lg:grid-cols-4 gap-6"
+    >
+      <aside class="lg:col-span-1 space-y-4">
+        <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
+          <h2 class="text-lg font-bold mb-4 text-slate-700">Diretório</h2>
+          <div class="flex flex-col gap-2 mb-4">
+            <label
+              class="text-[10px] font-bold text-slate-400 uppercase tracking-wider"
+              >Ordenar por Score</label
+            >
+            <select
+              id="sortOrder"
+              class="text-sm border border-slate-300 rounded-md p-2 bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="desc">Melhores Scores</option>
+              <option value="asc">Menores Scores</option>
+              <option value="esg">Melhor Impacto ESG</option>
+            </select>
+          </div>
+          <div
+            id="userList"
+            class="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar"
+          ></div>
+        </div>
+      </aside>
+
+      <section class="lg:col-span-3">
+        <div
+          class="bg-white rounded-xl shadow-sm p-4 mb-6 flex gap-3 border border-slate-200"
+        >
+          <input
+            type="text"
+            id="customerId"
+            placeholder="ID do Cliente (ex: USER-901)"
+            class="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+          <button
+            id="fetchBtn"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-all text-sm"
+          >
+            Analisar
+          </button>
+          <button
+            id="randomBtn"
+            class="p-2 border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors"
+            title="Sorteio Aleatório"
+          >
+            🎲
+          </button>
+        </div>
+
+        <div id="loading" class="hidden text-center py-20">
+          <div
+            class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto"
+          ></div>
+          <p class="mt-4 text-slate-500 text-sm">
+            Consultando motor Medallion...
+          </p>
+        </div>
+
+        <div
+          id="error"
+          class="hidden bg-red-50 text-red-600 p-4 rounded-lg text-center border border-red-100 mb-8 text-sm"
+        >
+          Cliente não encontrado na base PostgreSQL.
+        </div>
+
+        <div id="dashboard" class="hidden animate-fade-in space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div
+              class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 border-t-4 border-t-blue-500"
+            >
+              <h3 class="text-slate-500 text-xs font-bold uppercase">
+                Credit Score
+              </h3>
+              <div class="mt-4 flex items-baseline gap-2">
+                <span
+                  id="creditScore"
+                  class="text-5xl font-black text-slate-800"
+                  >0</span
+                >
+                <span class="text-xs font-bold text-slate-400">/ 1000</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-4">
+                <div
+                  id="scoreBar"
+                  class="bg-blue-500 h-2 rounded-full transition-all duration-1000"
+                  style="width: 0%"
+                ></div>
+              </div>
+            </div>
+
+            <div
+              class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 border-t-4 border-t-emerald-500"
+            >
+              <h3 class="text-slate-500 text-xs font-bold uppercase">
+                ESG Impact
+              </h3>
+              <div class="mt-4 flex items-baseline gap-2">
+                <span id="esgScore" class="text-5xl font-black text-emerald-600"
+                  >0.0</span
+                >
+                <span class="text-xs font-bold text-slate-400">/ 10</span>
+              </div>
+              <p
+                id="esgLabel"
+                class="mt-3 text-[10px] font-black uppercase tracking-tighter px-2 py-1 rounded text-center"
+              ></p>
+            </div>
+
+            <div
+              class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 border-t-4 border-t-purple-500"
+            >
+              <h3 class="text-slate-500 text-xs font-bold uppercase mb-4">
+                Metadados
+              </h3>
+              <div class="space-y-3">
+                <div class="flex justify-between border-b border-slate-50 pb-1">
+                  <span class="text-slate-400 text-[10px] uppercase font-bold"
+                    >Motor IA</span
+                  >
+                  <span class="text-[11px] font-bold text-slate-700"
+                    >Google Vertex</span
+                  >
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400 text-[10px] uppercase font-bold"
+                    >Sync</span
+                  >
+                  <span
+                    id="lastUpdated"
+                    class="text-[10px] font-bold text-slate-500"
+                    >---</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div
+              class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 flex flex-col h-[350px]"
+            >
+              <h3 class="text-slate-800 font-bold text-sm mb-4">
+                Perfil de Consumo
+              </h3>
+              <div class="relative flex-1">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+
+            <div
+              class="bg-white rounded-xl shadow-sm border border-slate-200 lg:col-span-2 overflow-hidden flex flex-col h-[350px]"
+            >
+              <div class="p-4 border-b border-slate-200 bg-slate-50">
+                <h3 class="text-slate-800 font-bold text-sm">
+                  Transações Recentes (Enriquecidas)
+                </h3>
+              </div>
+              <div class="overflow-y-auto flex-1">
+                <table class="w-full text-left">
+                  <thead class="sticky top-0 bg-white shadow-sm">
+                    <tr class="text-slate-400 text-[10px] uppercase font-bold">
+                      <th class="p-3">ID Transação</th>
+                      <th class="p-3">Categoria IA</th>
+                      <th class="p-3">ESG</th>
+                    </tr>
+                  </thead>
+                  <tbody id="transactionsTableBody" class="text-xs"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
