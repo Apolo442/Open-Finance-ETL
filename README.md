@@ -1,6 +1,6 @@
 ![Banner do Projeto](./banner.png)
 
-# Hub Open Finance AI - Dashboard de Crédito e ESG 🚀
+# Hub Open Finance AI - Dashboard de Crédito e ESG
 
 Este projeto é um ecossistema completo de **Open Finance**, utilizando Inteligência Artificial para transformar dados bancários brutos em **Score de Crédito Alternativo** e **Indicadores de Impacto ESG**.
 
