@@ -1,3 +1,5 @@
+![Banner do Projeto](./banner.png)
+
 # Hub Open Finance AI - Dashboard de Crédito e ESG 🚀
 
 Este projeto é um ecossistema completo de **Open Finance**, utilizando Inteligência Artificial para transformar dados bancários brutos em **Score de Crédito Alternativo** e **Indicadores de Impacto ESG**.
@@ -54,6 +56,7 @@ Antes de começar, certifique-se de ter instalado:
 ### 2. Instalação e Configuração
 
 **A. Clone o repositório:**
+
 ```Bash
 git clone https://github.com/Apolo442/Open-Finance-ETL.git
 cd Open-Finance-ETL
@@ -61,6 +64,7 @@ cd Open-Finance-ETL
 
 **B. Configure as Variáveis de Ambiente:**
 Crie um arquivo .env na raiz do projeto (use o .env.example se disponível) e adicione suas chaves:
+
 ```Bash
 GOOGLE_VERTEX_AI_KEY=sua_chave_aqui
 POSTGRES_USER=n8n_user
@@ -75,6 +79,7 @@ docker-compose up -d
 ```
 
 ### 3. Configuração do n8n
+
 - Acesse o n8n em http://localhost:5678.
 
 - Importe os arquivos .json localizados na pasta /workflows deste repositório.
@@ -84,10 +89,13 @@ Importante: Dentro do n8n, configure as credenciais do PostgreSQL utilizando os 
 - Ative os três workflows: Consentimento, Medallion Pipeline e API REST.
 
 ### 4. Inicialização de Dados (Seeding)
+
 Para visualizar o dashboard com dados reais, execute o workflow de Consentimento uma vez ou utilize o nó de Seeding para popular o PostgreSQL com os perfis de teste.
 
 ### 5. Acesso ao Dashboard
+
 Abra seu navegador e acesse a interface através do Proxy Reverso do Nginx:
+
 ```Bash
 http://localhost
 ```
@@ -95,6 +103,7 @@ http://localhost
 ---
 
 ### 🛠️ Estrutura de Portas (Internas)
+
 Caso precise depurar os serviços individualmente:
 
 - **Dashboard (Nginx):** Porta 80
