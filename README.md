@@ -34,13 +34,15 @@ Impacto de Negócio: Redução da assimetria de informação, democratização d
 - **Frontend:** Vanilla JS, TailwindCSS, Chart.js
 - **Containerização:** Docker & Docker Compose
 
-## 📐 Arquitetura do Sistema (C4 Model)
+## 📐 Arquitetura do Sistema (C4 Model - Level 2)
 
-O fluxo de dados segue o padrão de microsserviços:
+Para garantir escalabilidade e separação de preocupações, o Hub utiliza uma arquitetura de microsserviços conteinerizada:
 
-1. **Frontend** solicita dados ao **Nginx (Porta 80)**.
-2. **Nginx** atua como Proxy Reverso, encaminhando para o **n8n**.
-3. **n8n** consome do **PostgreSQL** (Camada Gold) e retorna o JSON enriquecido.
+<div align="center">
+  <img src="./diagrama-arquitetura.svg" alt="Arquitetura D2 Hub Open Finance" width="100%">
+</div>
+
+> **Nota:** O diagrama acima detalha o fluxo de dados desde o request do usuário, passando pelo Proxy Reverso (Nginx), orquestração (n8n) até o enriquecimento via IA (Vertex AI).
 
 ## 🚀 Como Rodar o Projeto
 
